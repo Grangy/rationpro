@@ -8,7 +8,7 @@ import {
   faCheck,
   faCircleNotch,
 } from "@fortawesome/free-solid-svg-icons";
-import { useFindProductByNameBguQuery, useCreateDishMutation, Product } from "../../src/graphql";
+import { useFindProductByNameBguQuery, useCreateDishMutation, Product, CreateDishMutationFn } from "../../src/graphql";
 
 interface NutrientInfo {
   protein: number;
@@ -18,6 +18,7 @@ interface NutrientInfo {
 }
 
 interface SelectedProduct extends Product {
+  cookingMethod: any;
   grams: number;
 }
 
@@ -56,11 +57,22 @@ const CreateDishContent = () => {
   };
 
   const handleCreateDish = async () => {
-    const dishProducts = selectedProducts.map(product => ({
+    const totalNutrients = calculateTotalNutrients();
+
+    const dishProductsData = selectedProducts.map(product => ({
       productId: product.id,
-      quantity: product.grams,
-      cookCoeff: COOKING_METHODS[cookingMethod]
+      amount: product.grams,
+      cookCoeff: COOKING_METHODS[product.cookingMethod as CookingMethods] || 1,
     }));
+
+    // Обновляем данные питательных веществ с рассчитанными значениями
+    const dishNutrientsData = [
+      { nutrientId: "b", amount: totalNutrients.protein },
+      { nutrientId: "g", amount: totalNutrients.fat },
+      { nutrientId: "u", amount: totalNutrients.carbs },
+      { nutrientId: "calcium", amount: totalNutrients.calories },  // Значение для кальция можно оставить статическим или также обновлять, если есть такая необходимость
+    ];
+
     try {
       const result = await createDishMutation({
         variables: {
@@ -69,7 +81,12 @@ const CreateDishContent = () => {
             description: dishDescription,
             dishProducts: {
               createMany: {
-                data: dishProducts
+                data: dishProductsData
+              }
+            },
+            dishNutrients: {
+              createMany: {
+                data: dishNutrientsData
               }
             }
           }
@@ -79,17 +96,22 @@ const CreateDishContent = () => {
         alert('Dish created successfully!');
       }
     } catch (error) {
-      alert('Failed to create dish: ' + (error instanceof Error ? error.message : String(error)));
+      alert(`Failed to create dish: ${(error as { message: string }).message}`);
     }
-  };
+};
+
+  
 
   const toggleProductSelection = (product: Product) => {
     setSelectedProducts((prev) => {
       const isAlreadySelected = prev.find((p) => p.id === product.id);
-      return isAlreadySelected
-        ? prev.filter((p) => p.id !== product.id)
-        : [...prev, { ...product, grams: 100 }];
-    });
+      if (isAlreadySelected) {
+          return prev.filter((p) => p.id !== product.id);
+      } else {
+          return [...prev, { ...product, grams: 100, cookingMethod: "Ничего" } as SelectedProduct];
+      }
+  });
+  
     setDisplayResults(false);
   };
 
@@ -138,7 +160,7 @@ const CreateDishContent = () => {
   };
 
   return (
-    <div className="p-2 ml-0 md:ml-28 w-full">
+    <div className="p-2 ml-0 md:ml-28">
       <div className="bg-white p-2 rounded shadow-md">
         <div className="flex flex-wrap -mx-2">
           <div className="w-full md:w-1/2 px-2 mb-6 md:mb-0">

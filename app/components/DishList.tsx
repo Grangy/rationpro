@@ -1,25 +1,9 @@
 // components/DishList.tsx
 "use client"
 import React, { useState } from 'react';
-import {
-  useGetAllDishProductsQuery
-} from "../../src/graphql";
-
-// Примерно определяем интерфейс, основываясь на предыдущих предложениях
-interface SimpleDishProduct {
-  productId: number;
-  cookCoeff: number;
-  quantity: number;
-  product: {
-    name: string;
-    productNutrients?: {
-      nutrient: {
-        name: string;
-      };
-      valueString?: string;
-    }[];
-  };
-}
+import { useGetAllDishProductsQuery } from "../../src/graphql";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faCircleNotch } from "@fortawesome/free-solid-svg-icons";
 
 const DishList = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -29,32 +13,7 @@ const DishList = () => {
     setSearchTerm(event.target.value);
   };
 
-  // Функция для расчета КБЖУ продуктов в блюде
-  const calculateNutrients = (dishProducts: SimpleDishProduct[]) => {
-    return dishProducts.reduce((acc, { product, cookCoeff, quantity }) => {
-      product.productNutrients?.forEach(nutrient => {
-        if (nutrient.valueString) {
-          const nutrientValue = parseFloat(nutrient.valueString);  // Предполагаем, что значения питательных веществ хранятся в строковом формате
-          const factor = cookCoeff * quantity / 100;
-          switch (nutrient.nutrient.name) {
-            case 'Белки':
-              acc.protein += nutrientValue * factor;
-              break;
-            case 'Жиры':
-              acc.fat += nutrientValue * factor;
-              break;
-            case 'Углеводы':
-              acc.carbs += nutrientValue * factor;
-              break;
-          }
-        }
-      });
-      acc.calories += (acc.protein * 4 + acc.fat * 9 + acc.carbs * 4); // Упрощённый расчёт калорий
-      return acc;
-    }, { protein: 0, fat: 0, carbs: 0, calories: 0 });
-  };
-
-  if (loading) return <p>Loading dishes...</p>;
+  if (loading) return <div className='text-center'><FontAwesomeIcon icon={faCircleNotch} spin className="text-6xl text-green-500 md:ml-28"/></div>;
   if (error) return <p>Error loading dishes: {error.message}</p>;
 
   const filteredDishes = data?.dishes.filter(dish =>
@@ -72,21 +31,22 @@ const DishList = () => {
       />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {filteredDishes.map((dish) => {
-          const nutrients = calculateNutrients(dish.dishProducts as SimpleDishProduct[]);
           return (
             <div key={dish.id} className="bg-white p-4 rounded-lg shadow-md">
               <h3 className="font-bold text-xl mb-2 text-black">{dish.name}</h3>
+              <p className="text-gray-600">{dish.description}</p>
               <ul className="mb-4">
                 {dish.dishProducts.map((dp) => (
                   <li key={dp.productId} className='text-black'>
-                    {dp.product.name} - {dp.quantity}г (Cooking factor: {dp.cookCoeff})
+                    {dp.product.name} - {dp.amount}g (Cooking factor: {dp.cookCoeff})
                   </li>
                 ))}
               </ul>
-              <p className="text-black">Белки: {nutrients.protein.toFixed(2)}г</p>
-              <p className="text-black">Жиры: {nutrients.fat.toFixed(2)}г</p>
-              <p className="text-black">Углеводы: {nutrients.carbs.toFixed(2)}г</p>
-              <p className="text-black">Калории: {nutrients.calories.toFixed(2)} ккал</p>
+              {dish.dishNutrients.map((nutrient) => (
+                <p key={nutrient.nutrientId} className="text-black">
+                  {nutrient.nutrient.name}: {nutrient.amount.toFixed(2)}
+                </p>
+              ))}
             </div>
           );
         })}
