@@ -9,6 +9,7 @@ import {
   faCircleNotch,
 } from "@fortawesome/free-solid-svg-icons";
 import { useFindProductByNameBguQuery, useCreateDishMutation, Product, CreateDishMutationFn } from "../../src/graphql";
+import AlertComponent from './AlertComponent';
 
 interface NutrientInfo {
   protein: number;
@@ -39,7 +40,9 @@ const CreateDishContent = () => {
   const [dishName, setDishName] = useState("");
   const [dishDescription, setDishDescription] = useState("");
   const [createDishMutation, { loading, error }] = useCreateDishMutation();
-
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  
   const { data, loading: searchLoading } = useFindProductByNameBguQuery({
     variables: { term: searchTerm },
     skip: searchTerm.length < 1,
@@ -60,45 +63,47 @@ const CreateDishContent = () => {
     const totalNutrients = calculateTotalNutrients();
 
     const dishProductsData = selectedProducts.map(product => ({
-      productId: product.id,
-      amount: product.grams,
-      cookCoeff: COOKING_METHODS[product.cookingMethod as CookingMethods] || 1,
+        productId: product.id,
+        amount: product.grams,
+        cookCoeff: COOKING_METHODS[product.cookingMethod as CookingMethods] || 1,
     }));
 
-    // Обновляем данные питательных веществ с рассчитанными значениями
     const dishNutrientsData = [
-      { nutrientId: "b", amount: totalNutrients.protein },
-      { nutrientId: "g", amount: totalNutrients.fat },
-      { nutrientId: "u", amount: totalNutrients.carbs },
-      { nutrientId: "calcium", amount: totalNutrients.calories },  // Значение для кальция можно оставить статическим или также обновлять, если есть такая необходимость
+        { nutrientId: "b", amount: totalNutrients.protein },
+        { nutrientId: "g", amount: totalNutrients.fat },
+        { nutrientId: "u", amount: totalNutrients.carbs },
+        { nutrientId: "calcium", amount: totalNutrients.calories },
     ];
 
     try {
-      const result = await createDishMutation({
-        variables: {
-          data: {
-            name: dishName,
-            description: dishDescription,
-            dishProducts: {
-              createMany: {
-                data: dishProductsData
-              }
-            },
-            dishNutrients: {
-              createMany: {
-                data: dishNutrientsData
-              }
+        const result = await createDishMutation({
+            variables: {
+                data: {
+                    name: dishName,
+                    description: dishDescription,
+                    dishProducts: {
+                        createMany: {
+                            data: dishProductsData
+                        }
+                    },
+                    dishNutrients: {
+                        createMany: {
+                            data: dishNutrientsData
+                        }
+                    }
+                }
             }
-          }
+        });
+        if (result.data) {
+            setSuccessMessage('Dish created successfully!');
+            setErrorMessage('');
         }
-      });
-      if (result.data) {
-        alert('Dish created successfully!');
-      }
     } catch (error) {
-      alert(`Failed to create dish: ${(error as { message: string }).message}`);
+        setErrorMessage(`Failed to create dish: ${(error as { message: string }).message}`);
+        setSuccessMessage('');
     }
 };
+
 
   
 
@@ -163,6 +168,23 @@ const CreateDishContent = () => {
     <div className="p-2 ml-0 md:ml-28">
       <div className="bg-white p-2 rounded shadow-md">
         <div className="flex flex-wrap -mx-2">
+        {errorMessage && (
+  <AlertComponent 
+    type="danger" 
+    message={errorMessage} 
+    show={!!errorMessage} // true, если errorMessage не пустое
+    onClose={() => setErrorMessage('')} // Очищает errorMessage, что скроет алерт
+  />
+)}
+{successMessage && (
+  <AlertComponent 
+    type="success" 
+    message={successMessage} 
+    show={!!successMessage} // true, если successMessage не пустое
+    onClose={() => setSuccessMessage('')} // Очищает successMessage, что скроет алерт
+  />
+)}
+
           <div className="w-full md:w-1/2 px-2 mb-6 md:mb-0">
             <div className="mb-6 flex relative">
               <input

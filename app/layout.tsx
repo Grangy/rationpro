@@ -7,7 +7,6 @@ import ProgressBar from './ProgressBar'; // Импортируйте ProgressBar
 import { ApolloProvider } from '@apollo/client';
 import client from '../src/ApolloClient'; // Путь до файла с Apollo Client
 import Head from 'next/head'; // Добавьте этот импорт
-
 config.autoAddCss = false; // Tell Font Awesome to skip adding the CSS automatically since it's being imported above.
 
 export default function RootLayout({
