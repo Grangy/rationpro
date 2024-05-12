@@ -17,7 +17,7 @@
 /build
 
 # GraphQL
-src/graphql.tsx
+/src/graphql.tsx
 
 # misc
 .DS_Store
@@ -37,3 +37,4 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+src/graphql.tsx
