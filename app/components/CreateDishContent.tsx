@@ -72,7 +72,7 @@ const CreateDishContent = () => {
         { nutrientId: "b", amount: totalNutrients.protein },
         { nutrientId: "g", amount: totalNutrients.fat },
         { nutrientId: "u", amount: totalNutrients.carbs },
-        { nutrientId: "calcium", amount: totalNutrients.calories },
+        { nutrientId: "calories", amount: totalNutrients.calories },
     ];
 
     try {
