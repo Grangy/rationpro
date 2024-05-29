@@ -1,4 +1,3 @@
-// components/DishList.tsx
 "use client"
 import React, { useState } from 'react';
 import { useGetAllDishProductsQuery } from "../../src/graphql";
@@ -11,6 +10,10 @@ const DishList = () => {
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
+  };
+
+  const replaceNutrientName = (name: string) => {
+    return name === 'Кальций' ? 'Калории' : name;
   };
 
   if (loading) return <div className='text-center'><FontAwesomeIcon icon={faCircleNotch} spin className="text-6xl text-green-500 md:ml-28"/></div>;
@@ -44,7 +47,7 @@ const DishList = () => {
               </ul>
               {dish.dishNutrients.map((nutrient) => (
                 <p key={nutrient.nutrientId} className="text-black">
-                  {nutrient.nutrient.name}: {nutrient.amount.toFixed(2)}
+                  {replaceNutrientName(nutrient.nutrient.name)}: {nutrient.amount.toFixed(2)}
                 </p>
               ))}
             </div>
