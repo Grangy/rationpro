@@ -1,5 +1,5 @@
-// components/SearchBar.tsx
-import React, { useState, useEffect, useRef } from 'react';
+// app/components/SearchBar.tsx
+import React, { useState } from 'react';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSearch } from "@fortawesome/free-solid-svg-icons";
 
@@ -9,18 +9,6 @@ interface SearchBarProps {
 
 const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const searchTimeout = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    if (searchTimeout.current) clearTimeout(searchTimeout.current);
-    searchTimeout.current = setTimeout(() => {
-      onSearch(searchTerm);
-    }, 700);
-
-    return () => {
-      if (searchTimeout.current) clearTimeout(searchTimeout.current);
-    };
-  }, [searchTerm, onSearch]);
 
   return (
     <div className="flex relative md:ml-28 p-2 mr-2">

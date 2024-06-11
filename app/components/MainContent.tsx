@@ -1,12 +1,9 @@
-// components/MainContent.tsx
-import React from "react";
+// app/components/MainContent.tsx
+import React, { useEffect, useState, useCallback } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faAppleAlt, faBreadSlice, faCheese, faFire, faCircleNotch } from "@fortawesome/free-solid-svg-icons";
+import { faAppleAlt, faBreadSlice, faCheese, faFire, faCircleNotch, faSearch } from "@fortawesome/free-solid-svg-icons";
 import ProductAdd from "./ProductAdd";
-import {
-  useGetProductsSkipTakeBguQuery,
-  useFindProductByNameBguQuery,
-} from "../../src/graphql";
+import { fetchProducts } from "../../src/api";
 
 interface MainContentProps {
   searchTerm: string;
@@ -14,46 +11,77 @@ interface MainContentProps {
 }
 
 const MainContent: React.FC<MainContentProps> = ({ searchTerm, searchTriggered }) => {
-  const [isAdding, setIsAdding] = React.useState<boolean>(false);
-  const [activeButton, setActiveButton] = React.useState<string | null>(null);
+  const [isAdding, setIsAdding] = useState<boolean>(false);
+  const [activeButton, setActiveButton] = useState<string | null>(null);
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
-  const { data, loading } = useGetProductsSkipTakeBguQuery({
-    variables: { skip: 0, take: 100 },
-  });
+  useEffect(() => {
+    const getProducts = async () => {
+      try {
+        setLoading(true);
+        const data = await fetchProducts(searchTerm);
+        console.log("Fetched products:", data); // Логирование полученных данных
+        setProducts(data);
+      } catch (error) {
+        console.error("Failed to fetch products:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const { data: searchData, loading: searchLoading } = useFindProductByNameBguQuery({
-    variables: { term: searchTerm },
-    skip: !searchTriggered,
-  });
+    getProducts();
+  }, [searchTerm]);
 
-  const calculateCalories = React.useCallback((protein: number, fat: number, carbs: number) => {
-    return protein * 4 + fat * 9 + carbs * 4;
+  const calculateCalories = useCallback((protein: number, fat: number, carbs: number) => {
+    return (protein * 4 + fat * 9 + carbs * 4).toFixed(2);
   }, []);
 
   if (isAdding) {
     return <ProductAdd goBack={() => setIsAdding(false)} />;
   }
 
-  if (loading || searchLoading) return <div className="text-center"><FontAwesomeIcon icon={faCircleNotch} spin className="text-6xl text-green-500"/></div>;
+  if (loading) return <div className="text-center"><FontAwesomeIcon icon={faCircleNotch} spin className="text-6xl text-green-500"/></div>;
 
-  const productList = searchTriggered ? searchData?.products : data?.products;
+  const productList = products;
+
+  function onSearch(searchTerm: string): void {
+    throw new Error("Function not implemented.");
+  }
 
   return (
     <main className="flex-1 p-2 ml-0 md:ml-28 mb-12 md:mb-0">
       <div className="bg-white p-2 rounded shadow-md">
+        <div className="mb-4 flex justify-between items-center">
+          <button
+            className="bg-green-500 text-white p-2 rounded"
+            onClick={() => setIsAdding(true)}
+          >
+            Добавить продукт
+          </button>
+          <div className="flex space-x-4">
+            <input
+              type="text"
+              placeholder="Поиск"
+              className="w-full p-2 border rounded pl-10 text-black"
+              value={searchTerm}
+              onChange={(e) => onSearch(e.target.value)}
+            />
+            <button
+              className="bg-green-500 hover:bg-green-700 text-white font-bold p-2 px-4"
+              onClick={() => onSearch(searchTerm)}
+            >
+              <FontAwesomeIcon icon={faSearch} />
+            </button>
+          </div>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-          {productList?.map((product) => {
-            let protein = 0,
-                fat = 0,
-                carbs = 0;
-            product.productNutrients.forEach((nutrient) => {
-              if (nutrient.valueString) {
-                if (nutrient.nutrient.name === "Белки") protein = parseFloat(nutrient.valueString);
-                else if (nutrient.nutrient.name === "Жиры") fat = parseFloat(nutrient.valueString);
-                else if (nutrient.nutrient.name === "Углеводы") carbs = parseFloat(nutrient.valueString);
-              }
-            });
+          {productList.map((product) => {
+            const protein = product.mainProteins || 0;
+            const fat = product.mainFats || 0;
+            const carbs = product.mainCarb || 0;
             const calories = calculateCalories(protein, fat, carbs);
+
             return (
               <div
                 key={product.id}
